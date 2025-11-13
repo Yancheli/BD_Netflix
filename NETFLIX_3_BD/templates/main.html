@@ -12,22 +12,35 @@
     <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
   </header>
 
-  <section class="hero" style="margin-top: 80px;">
-    <h1>Bienvenido a Netflix Clone</h1>
-    <p>Explora nuestras películas y series destacadas</p>
+  <section class="content-section">
+    <!-- Selector de Categorías -->
+    <div class="categories-wrapper">
+      <a href="{{ url_for('main', perfil=perfil) }}" 
+         class="category-chip {% if not categoria_seleccionada %}active{% endif %}">
+        Todas
+      </a>
+      {% for categoria in categorias %}
+      <a href="{{ url_for('main', perfil=perfil, categoria=categoria.id) }}" 
+         class="category-chip {% if categoria_seleccionada == categoria.id %}active{% endif %}">
+        {{ categoria.name }}
+      </a>
+      {% endfor %}
+    </div>
 
+    {% if peliculas %}
     <h2 style="margin-top:30px;">Películas</h2>
     <div class="movies">
       {% for pelicula in peliculas %}
       <div class="movie-card" tabindex="0"
            data-title="{{ pelicula.titulo }}"
-           data-trailer="{{ pelicula.trailer_url }}"
-           data-genre="{{ pelicula.genre }}"
-           data-duration="{{ pelicula.duration_min }}"
-           data-trailer-duration="{{ pelicula.trailer_duration }}"
+           data-description="{{ pelicula.descripcion }}"
+           data-genre="{{ pelicula.category.name }}"
+           data-duration="{{ pelicula.duracion }}"
+           data-year="{{ pelicula.año }}"
+           data-rating="{{ pelicula.calificacion or 'N/A' }}"
            data-type="Película">
         <div class="poster-wrap">
-          <img src="{{ url_for('static', filename=pelicula.imagen) }}" alt="{{ pelicula.titulo }}">
+          <img src="{{ url_for('static', filename=pelicula.imagen_url) }}" alt="{{ pelicula.titulo }}">
           <a class="play-overlay" href="#">▶</a>
         </div>
         <h4>{{ pelicula.titulo }}</h4>
@@ -35,19 +48,22 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
+    {% if series %}
     <h2 style="margin-top:40px;">Series</h2>
     <div class="movies">
       {% for s in series %}
       <div class="movie-card" tabindex="0"
            data-title="{{ s.titulo }}"
-           data-trailer="{{ s.trailer_url }}"
-           data-genre="{{ s.genre }}"
-           data-seasons="{{ s.seasons }}"
-           data-trailer-duration="{{ s.trailer_duration }}"
+           data-description="{{ s.descripcion }}"
+           data-genre="{{ s.category.name }}"
+           data-duration="{{ s.duracion }}"
+           data-year="{{ s.año }}"
+           data-rating="{{ s.calificacion or 'N/A' }}"
            data-type="Serie">
         <div class="poster-wrap">
-          <img src="{{ url_for('static', filename=s.imagen) }}" alt="{{ s.titulo }}">
+          <img src="{{ url_for('static', filename=s.imagen_url) }}" alt="{{ s.titulo }}">
           <a class="play-overlay" href="#">▶</a>
         </div>
         <h4>{{ s.titulo }}</h4>
@@ -55,6 +71,13 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
+
+    {% if not peliculas and not series %}
+    <p style="text-align: center; color: #bbb; margin-top: 40px;">
+      No hay contenido disponible en esta categoría.
+    </p>
+    {% endif %}
   </section>
 
   <!-- Modal / preview window -->
@@ -63,33 +86,24 @@
       <button class="close-btn" id="closePreview">✕</button>
       <div class="preview-left">
         <div class="video-wrap" id="videoWrap">
-          <!-- iframe inserted dynamically -->
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb;">
+            Vista previa no disponible
+          </div>
         </div>
       </div>
       <div class="preview-right">
         <h2 id="previewTitle">Título</h2>
         <p id="previewType">Tipo</p>
+        <p id="previewDescription" style="color: #bbb; margin: 12px 0;"></p>
         <p><strong>Género:</strong> <span id="previewGenre"></span></p>
         <p id="previewDuration"><strong>Duración:</strong> --</p>
-        <p id="previewTrailerDuration"><strong>Duración del trailer:</strong> --</p>
-        <div style="margin-top:12px;">
-          <button class="plan-btn" id="watchBtn">Reproducir trailer</button>
-        </div>
+        <p id="previewYear"><strong>Año:</strong> --</p>
+        <p id="previewRating"><strong>Calificación:</strong> --</p>
       </div>
     </div>
   </div>
 
   <script>
-    // Helper: convert youtube watch?v= to embed url
-    function toEmbed(url){
-      try{
-        const u = new URL(url);
-        const v = u.searchParams.get('v');
-        if(v) return 'https://www.youtube.com/embed/' + v + '?autoplay=1';
-      }catch(e){ }
-      return url;
-    }
-
     document.addEventListener('DOMContentLoaded', function(){
       const cards = document.querySelectorAll('.movie-card');
       const modal = document.getElementById('previewModal');
@@ -98,28 +112,20 @@
 
       function openPreview(card){
         const title = card.dataset.title;
-        const trailer = card.dataset.trailer;
+        const description = card.dataset.description || 'Sin descripción disponible';
         const genre = card.dataset.genre || '';
         const duration = card.dataset.duration || '';
-        const trailerDuration = card.dataset.trailerDuration || '';
+        const year = card.dataset.year || '';
+        const rating = card.dataset.rating || 'N/A';
         const type = card.dataset.type || '';
 
         document.getElementById('previewTitle').textContent = title;
         document.getElementById('previewType').textContent = type;
+        document.getElementById('previewDescription').textContent = description;
         document.getElementById('previewGenre').textContent = genre;
-        document.getElementById('previewDuration').innerHTML = '<strong>Duración:</strong> ' + (duration ? duration + ' min' : '--');
-        document.getElementById('previewTrailerDuration').innerHTML = '<strong>Duración del trailer:</strong> ' + (trailerDuration || '--');
-
-        // insert iframe
-        videoWrap.innerHTML = '';
-        const iframe = document.createElement('iframe');
-        iframe.width = '100%';
-        iframe.height = '100%';
-        iframe.frameBorder = '0';
-        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-        iframe.allowFullscreen = true;
-        iframe.src = toEmbed(trailer);
-        videoWrap.appendChild(iframe);
+        document.getElementById('previewDuration').innerHTML = '<strong>Duración:</strong> ' + (duration || '--');
+        document.getElementById('previewYear').innerHTML = '<strong>Año:</strong> ' + (year || '--');
+        document.getElementById('previewRating').innerHTML = '<strong>Calificación:</strong> ' + rating;
 
         modal.classList.add('open');
         modal.setAttribute('aria-hidden','false');
@@ -131,7 +137,7 @@
       });
 
       closeBtn.addEventListener('click', function(){
-        videoWrap.innerHTML = '';
+        videoWrap.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb;">Vista previa no disponible</div>';
         modal.classList.remove('open');
         modal.setAttribute('aria-hidden','true');
       });
