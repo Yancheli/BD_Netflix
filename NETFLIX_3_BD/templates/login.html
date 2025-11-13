@@ -1,33 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Netflix Clone - Iniciar sesión</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión - Netflix Clone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="home-bg">
+<body>
+  <header>
+    <a href="{{ url_for('index') }}" class="logo">NETFLIX</a>
+    <a href="{{ url_for('register') }}" class="btn-login">Registrarse</a>
+  </header>
 
-    <!-- Encabezado -->
-    <header class="header">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
-        <a href="{{ url_for('login') }}" class="login-btn">Iniciar sesión</a>
-    </header>
+  <div class="register-container">
+    <form action="{{ url_for('login') }}" method="POST">
+      <h2>Iniciar sesión</h2>
 
-    <!-- Contenido principal -->
-    <div class="hero">
-        <h1>Películas y series<br>ilimitadas y mucho más</h1>
-        <p>¿Quieres ver Netflix ya? Ingresa tu email para crear una cuenta o reiniciar tu membresía.</p>
+      {% if error %}
+        <p style="color: red; margin-bottom: 15px;">{{ error }}</p>
+      {% endif %}
 
-        <form method="post" action="{{ url_for('register') }}" class="email-form">
-            <input type="email" name="usuario" placeholder="Email" required>
-            <button type="submit">Comenzar &gt;</button>
-        </form>
-    </div>
+      <input type="text" name="username" placeholder="Nombre de usuario" required>
+      <input type="password" name="password" placeholder="Contraseña" required>
 
-    <!-- Barra inferior -->
-    <footer class="footer">
-    </footer>
+      <button type="submit">Entrar</button>
 
+      <p style="margin-top: 20px;">
+        ¿No tienes cuenta?
+        <a href="{{ url_for('register') }}">Regístrate</a>
+      </p>
+    </form>
+  </div>
 </body>
 </html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Elige tu plan - Netflix Clone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="home-bg">
+  <header class="header">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
+    <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+  </header>
+
+  <div class="hero">
+    <h1>Elige tu plan</h1>
+    <p>Selecciona el plan que mejor se adapte a ti</p>
+
+    <div class="plans-container">
+      <div class="plan-card">
+        <h2>Básico</h2>
+        <p>1 perfil<br>Calidad estándar</p>
+        <form method="post" action="{{ url_for('guardar_plan') }}">
+          <input type="hidden" name="plan" value="basico">
+          <button class="plan-btn" type="submit">Elegir</button>
+        </form>
+      </div>
+
+      <div class="plan-card">
+        <h2>Estándar</h2>
+        <p>2 perfiles<br>Calidad HD</p>
+        <form method="post" action="{{ url_for('guardar_plan') }}">
+          <input type="hidden" name="plan" value="estandar">
+          <button class="plan-btn" type="submit">Elegir</button>
+        </form>
+      </div>
+
+      <div class="plan-card">
+        <h2>Premium</h2>
+        <p>4 perfiles<br>Ultra HD</p>
+        <form method="post" action="{{ url_for('guardar_plan') }}">
+          <input type="hidden" name="plan" value="premium">
+          <button class="plan-btn" type="submit">Elegir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">© 2025 Netflix Clone</footer>
+</body>
+</html>

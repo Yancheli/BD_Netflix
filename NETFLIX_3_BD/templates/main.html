@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Netflix Clone - Inicio</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="header" style="background-color: #000;">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
+    <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+  </header>
+
+  <section class="hero" style="margin-top: 80px;">
+    <h1>Bienvenido a Netflix Clone</h1>
+    <p>Explora nuestras películas y series destacadas</p>
+
+    <h2 style="margin-top:30px;">Películas</h2>
+    <div class="movies">
+      {% for pelicula in peliculas %}
+      <div class="movie-card" tabindex="0"
+           data-title="{{ pelicula.titulo }}"
+           data-trailer="{{ pelicula.trailer_url }}"
+           data-genre="{{ pelicula.genre }}"
+           data-duration="{{ pelicula.duration_min }}"
+           data-trailer-duration="{{ pelicula.trailer_duration }}"
+           data-type="Película">
+        <div class="poster-wrap">
+          <img src="{{ url_for('static', filename=pelicula.imagen) }}" alt="{{ pelicula.titulo }}">
+          <a class="play-overlay" href="#">▶</a>
+        </div>
+        <h4>{{ pelicula.titulo }}</h4>
+        <div class="badge">Película</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <h2 style="margin-top:40px;">Series</h2>
+    <div class="movies">
+      {% for s in series %}
+      <div class="movie-card" tabindex="0"
+           data-title="{{ s.titulo }}"
+           data-trailer="{{ s.trailer_url }}"
+           data-genre="{{ s.genre }}"
+           data-seasons="{{ s.seasons }}"
+           data-trailer-duration="{{ s.trailer_duration }}"
+           data-type="Serie">
+        <div class="poster-wrap">
+          <img src="{{ url_for('static', filename=s.imagen) }}" alt="{{ s.titulo }}">
+          <a class="play-overlay" href="#">▶</a>
+        </div>
+        <h4>{{ s.titulo }}</h4>
+        <div class="badge badge-series">Serie</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Modal / preview window -->
+  <div id="previewModal" class="preview-modal" aria-hidden="true">
+    <div class="preview-content">
+      <button class="close-btn" id="closePreview">✕</button>
+      <div class="preview-left">
+        <div class="video-wrap" id="videoWrap">
+          <!-- iframe inserted dynamically -->
+        </div>
+      </div>
+      <div class="preview-right">
+        <h2 id="previewTitle">Título</h2>
+        <p id="previewType">Tipo</p>
+        <p><strong>Género:</strong> <span id="previewGenre"></span></p>
+        <p id="previewDuration"><strong>Duración:</strong> --</p>
+        <p id="previewTrailerDuration"><strong>Duración del trailer:</strong> --</p>
+        <div style="margin-top:12px;">
+          <button class="plan-btn" id="watchBtn">Reproducir trailer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Helper: convert youtube watch?v= to embed url
+    function toEmbed(url){
+      try{
+        const u = new URL(url);
+        const v = u.searchParams.get('v');
+        if(v) return 'https://www.youtube.com/embed/' + v + '?autoplay=1';
+      }catch(e){ }
+      return url;
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      const cards = document.querySelectorAll('.movie-card');
+      const modal = document.getElementById('previewModal');
+      const videoWrap = document.getElementById('videoWrap');
+      const closeBtn = document.getElementById('closePreview');
+
+      function openPreview(card){
+        const title = card.dataset.title;
+        const trailer = card.dataset.trailer;
+        const genre = card.dataset.genre || '';
+        const duration = card.dataset.duration || '';
+        const trailerDuration = card.dataset.trailerDuration || card.dataset.trailerDuration || '';
+        const type = card.dataset.type || '';
+
+        document.getElementById('previewTitle').textContent = title;
+        document.getElementById('previewType').textContent = type;
+        document.getElementById('previewGenre').textContent = genre;
+        document.getElementById('previewDuration').innerHTML = '<strong>Duración:</strong> ' + (duration ? duration + ' min' : '--');
+        document.getElementById('previewTrailerDuration').innerHTML = '<strong>Duración del trailer:</strong> ' + (trailerDuration || '--');
+
+        // insert iframe
+        videoWrap.innerHTML = '';
+        const iframe = document.createElement('iframe');
+        iframe.width = '100%';
+        iframe.height = '100%';
+        iframe.frameBorder = '0';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.src = toEmbed(trailer);
+        videoWrap.appendChild(iframe);
+
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden','false');
+      }
+
+      cards.forEach(c => {
+        c.addEventListener('click', function(){ openPreview(c); });
+        c.addEventListener('keydown', function(e){ if(e.key === 'Enter') openPreview(c); });
+      });
+
+      closeBtn.addEventListener('click', function(){
+        videoWrap.innerHTML = '';
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden','true');
+      });
+
+      // close on ESC
+      document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeBtn.click(); } });
+    });
+  </script>
+
+  <footer class="footer">© 2025 Netflix Clone</footer>
+</body>
+</html>

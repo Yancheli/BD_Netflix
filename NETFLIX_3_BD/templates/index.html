@@ -1,23 +1,26 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Netflix Clone</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <title>Netflix Clone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <div style="text-align:right;">
-        <span> {{ usuario }}</span>
-        <a href="{{ url_for('logout') }}">Cerrar sesión</a>
-    </div>
-    <h1> Netflix</h1>
-    <div class="movies">
-        {% for movie in movies %}
-        <div class="movie-card">
-            <img src="{{ movie.image }}" alt="{{ movie.title }}">
-            <h2>{{ movie.title }}</h2>
-        </div>
-        {% endfor %}
-    </div>
+<body class="hero-bg">
+  <div class="container">
+    <h1>Películas y series ilimitadas y mucho más</h1>
+    <p>¿Quieres ver Netflix ya? Ingresa tu email para crear una cuenta o reiniciar tu membresía.</p>
+
+    <!-- Formulario de registro -->
+    <form action="{{ url_for('register') }}" method="POST">
+      <input type="email" name="email" placeholder="Ingresa tu email" required>
+      <button type="submit">Comenzar ></button>
+    </form>
+
+    <!-- Botón de login -->
+    <form action="{{ url_for('login') }}" method="GET">
+      <button type="submit">Iniciar sesión</button>
+    </form>
+  </div>
 </body>
 </html>

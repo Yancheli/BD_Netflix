@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Pago - Netflix Clone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="home-bg">
+  <header class="header">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
+    <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+  </header>
+
+  <div class="hero">
+    <h1>Pagar plan: {{ plan|capitalize }}</h1>
+    <p>Introduce los datos de tu tarjeta para simular el pago.</p>
+
+    {% if error %}
+      <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" style="max-width:420px; margin: 20px auto; background: rgba(0,0,0,0.6); padding:20px; border-radius:8px; position:relative;">
+      <div class="payment-wrapper">
+        <div class="payment-selector" id="paymentSelector" tabindex="0" role="button" aria-expanded="false">
+          <span class="selected">Visa</span>
+          <span class="arrow">▾</span>
+        </div>
+
+        <div class="payment-options" id="paymentOptions">
+          <button type="button" data-method="visa">Visa</button>
+          <button type="button" data-method="mastercard">Mastercard</button>
+        </div>
+
+        <input type="hidden" name="method" id="methodInput" value="visa">
+      </div>
+
+      <input type="text" name="name" placeholder="Nombre en la tarjeta" required>
+      <input type="text" name="card_number" placeholder="Número de tarjeta" required>
+      <input type="text" name="exp" placeholder="MM/AA" required>
+      <input type="text" name="cvv" placeholder="CVV" required>
+
+      <button class="plan-btn" type="submit">Pagar (simulado)</button>
+    </form>
+
+    <script>
+      // Payment selector toggle and selection
+      (function(){
+        const selector = document.getElementById('paymentSelector');
+        const options = document.getElementById('paymentOptions');
+        const input = document.getElementById('methodInput');
+        const selectedLabel = selector && selector.querySelector('.selected');
+
+        function toggle(e){
+          const expanded = selector.getAttribute('aria-expanded') === 'true';
+          selector.setAttribute('aria-expanded', String(!expanded));
+          options.classList.toggle('show');
+        }
+
+        if(selector){
+          selector.addEventListener('click', toggle);
+          selector.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+        }
+
+        if(options){
+          options.addEventListener('click', function(e){
+            const btn = e.target.closest('button[data-method]');
+            if(!btn) return;
+            const m = btn.getAttribute('data-method');
+            input.value = m;
+            if(selectedLabel) selectedLabel.textContent = btn.textContent;
+            options.classList.remove('show');
+            selector.setAttribute('aria-expanded', 'false');
+          });
+        }
+
+        // close on outside click
+        document.addEventListener('click', function(e){
+          if(!selector.contains(e.target) && !options.contains(e.target)){
+            options.classList.remove('show');
+            selector && selector.setAttribute('aria-expanded','false');
+          }
+        });
+      })();
+    </script>
+
+    <p style="color:#bbb; text-align:center; margin-top:10px;">Este es un pago simulado; no se procesa realmente ninguna tarjeta.</p>
+  </div>
+
+  <footer class="footer">© 2025 Netflix Clone</footer>
+</body>
+</html>
