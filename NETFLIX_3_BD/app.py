@@ -3,22 +3,23 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 app = Flask(__name__)
 app.secret_key = "clave_secreta_segura"
 
-# Diccionario para simular base de datos
+# Diccionario para simular base de datos de usuarios
 usuarios = {}
 
-# Contenido simulado: películas y series con trailer_url para mostrar
+# Contenido simulado: películas y series con imágenes locales
 peliculas = [
-    {'id': 1, 'titulo': 'Inception', 'tipo': 'movie', 'imagen': 'inception.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=YoHD9XEInc0', 'genre': 'Ciencia Ficción', 'duration_min': 148, 'trailer_duration': '2:28', 'rating': 'PG-13'},
-    {'id': 2, 'titulo': 'Parásitos', 'tipo': 'movie', 'imagen': 'parasitos.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=5xH0HfJHsaY', 'genre': 'Drama', 'duration_min': 132, 'trailer_duration': '2:10', 'rating': 'R'},
-    {'id': 3, 'titulo': 'Your Name', 'tipo': 'movie', 'imagen': 'yourname.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=xU47nhruN-Q', 'genre': 'Animación', 'duration_min': 107, 'trailer_duration': '1:55', 'rating': 'PG'},
+    {'id': 1, 'titulo': 'Inception', 'tipo': 'movie', 'imagen': 'images/inception.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=YoHD9XEInc0', 'genre': 'Ciencia Ficción', 'duration_min': 148, 'trailer_duration': '2:28', 'rating': 'PG-13'},
+    {'id': 2, 'titulo': 'Parásitos', 'tipo': 'movie', 'imagen': 'images/parasitos.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=5xH0HfJHsaY', 'genre': 'Drama', 'duration_min': 132, 'trailer_duration': '2:10', 'rating': 'R'},
+    {'id': 3, 'titulo': 'Your Name', 'tipo': 'movie', 'imagen': 'images/yourname.png', 'trailer_url': 'https://www.youtube.com/watch?v=xU47nhruN-Q', 'genre': 'Animación', 'duration_min': 107, 'trailer_duration': '1:55', 'rating': 'PG'},
 ]
 
 series = [
-    {'id': 1, 'titulo': 'Stranger Things', 'tipo': 'series', 'imagen': 'stranger.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=mnd7sFt5c3A', 'genre': 'Ciencia Ficción', 'seasons': 4, 'trailer_duration': '1:50'},
-    {'id': 2, 'titulo': 'La Casa de Papel', 'tipo': 'series', 'imagen': 'lcdp.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=VyQA4K_Bd8Q', 'genre': 'Acción', 'seasons': 5, 'trailer_duration': '2:05'},
-    {'id': 3, 'titulo': 'Narcos', 'tipo': 'series', 'imagen': 'narcos.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=G3_2v5mQIOg', 'genre': 'Drama', 'seasons': 3, 'trailer_duration': '1:40'},
+    {'id': 1, 'titulo': 'Stranger Things', 'tipo': 'series', 'imagen': 'images/stranger.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=mnd7sFt5c3A', 'genre': 'Ciencia Ficción', 'seasons': 4, 'trailer_duration': '1:50'},
+    {'id': 2, 'titulo': 'La Casa de Papel', 'tipo': 'series', 'imagen': 'images/lcdp.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=VyQA4K_Bd8Q', 'genre': 'Acción', 'seasons': 5, 'trailer_duration': '2:05'},
+    {'id': 3, 'titulo': 'Narcos', 'tipo': 'series', 'imagen': 'images/narcos.jpg', 'trailer_url': 'https://www.youtube.com/watch?v=G3_2v5mQIOg', 'genre': 'Drama', 'seasons': 3, 'trailer_duration': '1:40'},
 ]
 
+# ---------------- RUTAS PRINCIPALES ----------------
 
 @app.route('/')
 def index():
@@ -46,7 +47,6 @@ def register():
             'perfiles': []
         }
 
-        # Después del registro, forzamos a elegir un plan
         session['usuario'] = username
         return redirect(url_for('planes'))
 
@@ -62,7 +62,6 @@ def login():
 
         if username in usuarios and usuarios[username]['password'] == password:
             session['usuario'] = username
-            # Si tiene plan, vamos a selección de perfil; si no, a elegir plan
             if usuarios[username].get('plan'):
                 return redirect(url_for('perfiles'))
             return redirect(url_for('planes'))
@@ -84,8 +83,8 @@ def planes():
 def guardar_plan():
     if 'usuario' not in session:
         return redirect(url_for('login'))
+
     plan = request.form.get('plan')
-    # Guardamos temporalmente la elección y vamos a pago simulado
     usuarios[session['usuario']]['plan_pending'] = plan
     return redirect(url_for('pagar'))
 
@@ -99,27 +98,24 @@ def pagar():
     plan = user.get('plan_pending') or user.get('plan') or 'basico'
 
     if request.method == 'POST':
-        # Simular procesamiento de tarjeta
         card_number = request.form.get('card_number')
         name = request.form.get('name')
         exp = request.form.get('exp')
         cvv = request.form.get('cvv')
 
-        # Validaciones mínimas
         if not card_number or not name or not exp or not cvv:
             return render_template('pagar.html', plan=plan, error='Completa los datos de la tarjeta')
 
-        # Simular pago exitoso
         usuarios[session['usuario']]['plan'] = plan
         usuarios[session['usuario']].pop('plan_pending', None)
-        # Inicializar perfiles según el plan (creamos uno por defecto)
+
+        # Inicializar perfiles por defecto
         plan_limits = {'basico': 1, 'estandar': 2, 'premium': 4}
         max_perfiles = plan_limits.get(plan, 1)
         if not usuarios[session['usuario']]['perfiles']:
-            usuarios[session['usuario']]['perfiles'] = []
-            usuarios[session['usuario']]['perfiles'].append({'nombre': session['usuario'], 'imagen': 'avatar1.png', 'es_infantil': False})
+            usuarios[session['usuario']]['perfiles'].append({'nombre': session['usuario'], 'imagen': 'images/avatar1.png', 'es_infantil': False})
 
-        flash('Pago simulado correctamente. Plan activado: {}'.format(plan))
+        flash(f'Pago simulado correctamente. Plan activado: {plan}')
         return redirect(url_for('perfiles'))
 
     return render_template('pagar.html', plan=plan)
@@ -137,9 +133,8 @@ def perfiles():
     max_perfiles = plan_limits.get(plan, 1)
 
     perfiles = user.get('perfiles', [])
-    # rellenar imagen si falta
     for p in perfiles:
-        p.setdefault('imagen', 'avatar1.png')
+        p.setdefault('imagen', 'images/avatar1.png')
 
     return render_template('perfiles.html', perfiles=perfiles, max_perfiles=max_perfiles)
 
@@ -148,6 +143,7 @@ def perfiles():
 def crear_perfil():
     if 'usuario' not in session:
         return redirect(url_for('login'))
+
     user = usuarios[session['usuario']]
     plan = user.get('plan', 'basico')
     plan_limits = {'basico': 1, 'estandar': 2, 'premium': 4}
@@ -164,7 +160,7 @@ def crear_perfil():
         flash('El nombre del perfil es requerido')
         return redirect(url_for('perfiles'))
 
-    perfiles.append({'nombre': nombre, 'imagen': 'avatar1.png', 'es_infantil': es_infantil})
+    perfiles.append({'nombre': nombre, 'imagen': 'images/avatar1.png', 'es_infantil': es_infantil})
     flash('Perfil creado')
     return redirect(url_for('perfiles'))
 

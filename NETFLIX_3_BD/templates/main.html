@@ -101,7 +101,7 @@
         const trailer = card.dataset.trailer;
         const genre = card.dataset.genre || '';
         const duration = card.dataset.duration || '';
-        const trailerDuration = card.dataset.trailerDuration || card.dataset.trailerDuration || '';
+        const trailerDuration = card.dataset.trailerDuration || '';
         const type = card.dataset.type || '';
 
         document.getElementById('previewTitle').textContent = title;
@@ -136,7 +136,6 @@
         modal.setAttribute('aria-hidden','true');
       });
 
-      // close on ESC
       document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeBtn.click(); } });
     });
   </script>
