@@ -22,6 +22,46 @@
       border: 1px solid rgba(229, 9, 20, 0.5);
     }
     
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .btn-gestionar {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    .btn-gestionar:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.3);
+    }
+    
+    .btn-perfiles {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    .btn-perfiles:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.3);
+    }
+    
     .flash-message {
       position: fixed;
       top: 80px;
@@ -45,6 +85,108 @@
         transform: translate(-50%, 0);
       }
     }
+    
+    /* Barra de búsqueda */
+    .search-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+    
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 500px;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 12px 45px 12px 45px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: var(--rojo-netflix);
+      background: rgba(255,255,255,0.12);
+      box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1);
+    }
+    
+    .search-input::placeholder {
+      color: rgba(255,255,255,0.5);
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.5);
+      font-size: 18px;
+      pointer-events: none;
+    }
+    
+    .clear-search {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    
+    .clear-search:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .clear-search.hidden {
+      display: none;
+    }
+    
+    .search-results-info {
+      background: rgba(74, 144, 226, 0.15);
+      border-left: 4px solid #4a90e2;
+      padding: 12px 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      color: white;
+    }
+    
+    @media (max-width: 768px) {
+      .search-container {
+        flex-direction: column;
+      }
+      
+      .search-box {
+        max-width: 100%;
+      }
+      
+      .header-actions {
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      
+      .btn-gestionar, .btn-perfiles {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -57,8 +199,11 @@
         </span>
       {% endif %}
     </div>
-    <div>
-      <a href="{{ url_for('perfiles') }}" class="login-btn" style="margin-right: 10px; background: rgba(255,255,255,0.1);">
+    <div class="header-actions">
+      <a href="{{ url_for('gestionar_perfiles') }}" class="btn-gestionar">
+        ⚙️ Gestionar Perfiles
+      </a>
+      <a href="{{ url_for('perfiles') }}" class="btn-perfiles">
         Cambiar Perfil
       </a>
       <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
@@ -80,7 +225,38 @@
     </div>
     {% endif %}
 
-    <!-- Selector de Categorías -->
+    <!-- Barra de búsqueda -->
+    <div class="search-container">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <form method="GET" action="{{ url_for('main') }}" id="searchForm">
+          <input type="hidden" name="perfil" value="{{ perfil }}">
+          <input 
+            type="text" 
+            name="busqueda" 
+            id="searchInput"
+            class="search-input" 
+            placeholder="Buscar películas o series..." 
+            value="{{ busqueda if busqueda else '' }}"
+            autocomplete="off">
+          <button type="button" class="clear-search {% if not busqueda %}hidden{% endif %}" id="clearSearch">✕</button>
+        </form>
+      </div>
+    </div>
+
+    {% if busqueda %}
+    <div class="search-results-info">
+      <strong>🔍 Resultados de búsqueda para:</strong> "{{ busqueda }}" 
+      {% if not peliculas and not series %}
+        - No se encontraron resultados
+      {% else %}
+        - {{ peliculas|length + series|length }} resultado(s)
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Selector de Categorías (solo si NO hay búsqueda) -->
+    {% if not busqueda %}
     <div class="categories-wrapper">
       <a href="{{ url_for('main', perfil=perfil) }}" 
          class="category-chip {% if not categoria_seleccionada %}active{% endif %}">
@@ -93,6 +269,7 @@
       </a>
       {% endfor %}
     </div>
+    {% endif %}
 
     {% if peliculas %}
     <h2 class="section-title">Películas</h2>
@@ -142,10 +319,17 @@
 
     {% if not peliculas and not series %}
     <div class="empty-state">
-      <p>No hay contenido disponible en esta categoría.</p>
+      <p>No hay contenido disponible{% if busqueda %} para tu búsqueda{% elif categoria_seleccionada %} en esta categoría{% endif %}.</p>
       {% if es_infantil %}
         <p style="margin-top: 10px; font-size: 0.9em;">
           Los perfiles infantiles solo pueden acceder a contenido de las categorías Infantil y Romance.
+        </p>
+      {% endif %}
+      {% if busqueda %}
+        <p style="margin-top: 10px;">
+          <a href="{{ url_for('main', perfil=perfil) }}" style="color: var(--rojo-netflix); text-decoration: underline;">
+            Limpiar búsqueda y ver todo el contenido
+          </a>
         </p>
       {% endif %}
     </div>
@@ -224,6 +408,47 @@
           setTimeout(() => flashMsg.remove(), 300);
         }, 3000);
       }
+
+      // Búsqueda
+      const searchInput = document.getElementById('searchInput');
+      const searchForm = document.getElementById('searchForm');
+      const clearSearch = document.getElementById('clearSearch');
+
+      // Auto-submit después de dejar de escribir
+      let searchTimeout;
+      searchInput.addEventListener('input', function(){
+        clearTimeout(searchTimeout);
+        
+        // Mostrar/ocultar botón de limpiar
+        if(this.value.trim()) {
+          clearSearch.classList.remove('hidden');
+        } else {
+          clearSearch.classList.add('hidden');
+        }
+        
+        // Búsqueda automática después de 500ms sin escribir
+        searchTimeout = setTimeout(() => {
+          if(this.value.trim() || '{{ busqueda }}') {
+            searchForm.submit();
+          }
+        }, 500);
+      });
+
+      // Limpiar búsqueda
+      clearSearch.addEventListener('click', function(){
+        searchInput.value = '';
+        clearSearch.classList.add('hidden');
+        searchForm.submit();
+      });
+
+      // Submit con Enter
+      searchInput.addEventListener('keydown', function(e){
+        if(e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(searchTimeout);
+          searchForm.submit();
+        }
+      });
     });
   </script>
 

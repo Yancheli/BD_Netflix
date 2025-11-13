@@ -153,14 +153,14 @@ def crear_perfil():
 
     if len(usuario.perfiles) >= max_perfiles:
         flash('No puedes crear más perfiles con el plan actual')
-        return redirect(url_for('perfiles'))
+        return redirect(url_for('gestionar_perfiles'))
 
     nombre = request.form.get('nombre')
     es_infantil = bool(request.form.get('es_infantil'))
     
     if not nombre:
         flash('El nombre del perfil es requerido')
-        return redirect(url_for('perfiles'))
+        return redirect(url_for('gestionar_perfiles'))
 
     nuevo_perfil = Perfil(
         nombre=nombre,
@@ -171,7 +171,7 @@ def crear_perfil():
     db.session.commit()
     
     flash('Perfil creado exitosamente')
-    return redirect(url_for('perfiles'))
+    return redirect(url_for('gestionar_perfiles'))
 
 
 # ---------------- GESTIÓN DE PERFILES ----------------
@@ -253,6 +253,7 @@ def main():
 
     perfil_nombre = request.args.get('perfil')
     categoria_id = request.args.get('categoria', type=int)
+    busqueda = request.args.get('busqueda', '').strip()
     
     # Obtener el perfil actual
     usuario = Usuario.query.get(session['usuario_id'])
@@ -278,8 +279,27 @@ def main():
                 flash('Este contenido no está disponible en perfiles infantiles')
                 return redirect(url_for('main', perfil=perfil_nombre))
     
+    # Filtrar contenido por búsqueda
+    if busqueda:
+        from unidecode import unidecode
+        busqueda_normalizada = unidecode(busqueda.lower())
+        
+        # Obtener todos los contenidos disponibles según el perfil
+        if perfil_actual and perfil_actual.es_infantil:
+            categorias_permitidas_ids = [c.id for c in categorias]
+            contenidos = Contenido.query.filter(
+                Contenido.category_id.in_(categorias_permitidas_ids)
+            ).all()
+        else:
+            contenidos = Contenido.query.all()
+        
+        # Filtrar por título usando búsqueda flexible
+        contenidos = [
+            c for c in contenidos 
+            if busqueda_normalizada in unidecode(c.titulo.lower())
+        ]
     # Filtrar contenido por categoría si se especifica
-    if categoria_id:
+    elif categoria_id:
         contenidos = Contenido.query.filter_by(category_id=categoria_id).all()
     else:
         # Si es perfil infantil, mostrar solo contenido permitido
@@ -301,7 +321,8 @@ def main():
                          categorias=categorias,
                          categoria_seleccionada=categoria_id,
                          perfil=perfil_nombre,
-                         es_infantil=perfil_actual.es_infantil if perfil_actual else False)
+                         es_infantil=perfil_actual.es_infantil if perfil_actual else False,
+                         busqueda=busqueda)
 
 
 # ---------------- LOGOUT ----------------
