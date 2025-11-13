@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from config import Config
-from models import db, Usuario, Perfil, Contenido, Favorito, Category
+from models import db, Usuario, Perfil, Contenido, Favorito
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -153,14 +153,14 @@ def crear_perfil():
 
     if len(usuario.perfiles) >= max_perfiles:
         flash('No puedes crear más perfiles con el plan actual')
-        return redirect(url_for('gestionar_perfiles'))
+        return redirect(url_for('perfiles'))
 
     nombre = request.form.get('nombre')
     es_infantil = bool(request.form.get('es_infantil'))
     
     if not nombre:
         flash('El nombre del perfil es requerido')
-        return redirect(url_for('gestionar_perfiles'))
+        return redirect(url_for('perfiles'))
 
     nuevo_perfil = Perfil(
         nombre=nombre,
@@ -171,78 +171,7 @@ def crear_perfil():
     db.session.commit()
     
     flash('Perfil creado exitosamente')
-    return redirect(url_for('gestionar_perfiles'))
-
-
-# ---------------- GESTIÓN DE PERFILES ----------------
-@app.route('/gestionar_perfiles')
-def gestionar_perfiles():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    
-    usuario = Usuario.query.get(session['usuario_id'])
-    plan = session.get('plan', 'basico')
-    plan_limits = {'basico': 1, 'estandar': 2, 'premium': 4}
-    max_perfiles = plan_limits.get(plan, 1)
-    
-    return render_template('gestionar_perfiles.html', 
-                         perfiles=usuario.perfiles,
-                         max_perfiles=max_perfiles)
-
-
-@app.route('/editar_perfil/<int:perfil_id>', methods=['GET', 'POST'])
-def editar_perfil(perfil_id):
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    
-    perfil = Perfil.query.get_or_404(perfil_id)
-    
-    # Verificar que el perfil pertenece al usuario
-    if perfil.usuario_id != session['usuario_id']:
-        flash('No tienes permiso para editar este perfil')
-        return redirect(url_for('gestionar_perfiles'))
-    
-    if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        es_infantil = bool(request.form.get('es_infantil'))
-        
-        if not nombre:
-            flash('El nombre del perfil es requerido')
-            return render_template('editar_perfil.html', perfil=perfil)
-        
-        perfil.nombre = nombre
-        perfil.es_infantil = es_infantil
-        db.session.commit()
-        
-        flash('Perfil actualizado exitosamente')
-        return redirect(url_for('gestionar_perfiles'))
-    
-    return render_template('editar_perfil.html', perfil=perfil)
-
-
-@app.route('/eliminar_perfil/<int:perfil_id>', methods=['POST'])
-def eliminar_perfil(perfil_id):
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    
-    perfil = Perfil.query.get_or_404(perfil_id)
-    
-    # Verificar que el perfil pertenece al usuario
-    if perfil.usuario_id != session['usuario_id']:
-        flash('No tienes permiso para eliminar este perfil')
-        return redirect(url_for('gestionar_perfiles'))
-    
-    # Verificar que no sea el último perfil
-    usuario = Usuario.query.get(session['usuario_id'])
-    if len(usuario.perfiles) <= 1:
-        flash('No puedes eliminar el último perfil')
-        return redirect(url_for('gestionar_perfiles'))
-    
-    db.session.delete(perfil)
-    db.session.commit()
-    
-    flash('Perfil eliminado exitosamente')
-    return redirect(url_for('gestionar_perfiles'))
+    return redirect(url_for('perfiles'))
 
 
 # ---------------- PÁGINA PRINCIPAL (PELÍCULAS / SERIES) ----------------
@@ -253,63 +182,16 @@ def main():
 
     perfil_nombre = request.args.get('perfil')
     categoria_id = request.args.get('categoria', type=int)
-    busqueda = request.args.get('busqueda', '').strip()
-    
-    # Obtener el perfil actual
-    usuario = Usuario.query.get(session['usuario_id'])
-    perfil_actual = None
-    if perfil_nombre:
-        perfil_actual = Perfil.query.filter_by(
-            nombre=perfil_nombre, 
-            usuario_id=usuario.id
-        ).first()
     
     # Obtener todas las categorías
+    from models import Category
     categorias = Category.query.all()
     
-    # Si es perfil infantil, filtrar solo categorías permitidas
-    if perfil_actual and perfil_actual.es_infantil:
-        categorias_permitidas = ['Infantil', 'Romance']
-        categorias = [c for c in categorias if c.name in categorias_permitidas]
-        
-        # Si se seleccionó una categoría no permitida, redirigir
-        if categoria_id:
-            categoria_seleccionada = Category.query.get(categoria_id)
-            if categoria_seleccionada and categoria_seleccionada.name not in categorias_permitidas:
-                flash('Este contenido no está disponible en perfiles infantiles')
-                return redirect(url_for('main', perfil=perfil_nombre))
-    
-    # Filtrar contenido por búsqueda
-    if busqueda:
-        from unidecode import unidecode
-        busqueda_normalizada = unidecode(busqueda.lower())
-        
-        # Obtener todos los contenidos disponibles según el perfil
-        if perfil_actual and perfil_actual.es_infantil:
-            categorias_permitidas_ids = [c.id for c in categorias]
-            contenidos = Contenido.query.filter(
-                Contenido.category_id.in_(categorias_permitidas_ids)
-            ).all()
-        else:
-            contenidos = Contenido.query.all()
-        
-        # Filtrar por título usando búsqueda flexible
-        contenidos = [
-            c for c in contenidos 
-            if busqueda_normalizada in unidecode(c.titulo.lower())
-        ]
     # Filtrar contenido por categoría si se especifica
-    elif categoria_id:
+    if categoria_id:
         contenidos = Contenido.query.filter_by(category_id=categoria_id).all()
     else:
-        # Si es perfil infantil, mostrar solo contenido permitido
-        if perfil_actual and perfil_actual.es_infantil:
-            categorias_permitidas_ids = [c.id for c in categorias]
-            contenidos = Contenido.query.filter(
-                Contenido.category_id.in_(categorias_permitidas_ids)
-            ).all()
-        else:
-            contenidos = Contenido.query.all()
+        contenidos = Contenido.query.all()
     
     # Separar películas y series
     peliculas = [c for c in contenidos if c.tipo == 'movie']
@@ -320,9 +202,108 @@ def main():
                          series=series,
                          categorias=categorias,
                          categoria_seleccionada=categoria_id,
+                         perfil=perfil_nombre)
+
+
+# ---------------- FAVORITOS ----------------
+@app.route('/agregar_favorito/<int:contenido_id>', methods=['POST'])
+def agregar_favorito(contenido_id):
+    if 'usuario_id' not in session:
+        return {'success': False, 'error': 'No autenticado'}, 401
+    
+    perfil_nombre = request.form.get('perfil')
+    if not perfil_nombre:
+        return {'success': False, 'error': 'Perfil no especificado'}, 400
+    
+    # Obtener el perfil
+    usuario = Usuario.query.get(session['usuario_id'])
+    perfil = Perfil.query.filter_by(nombre=perfil_nombre, usuario_id=usuario.id).first()
+    
+    if not perfil:
+        return {'success': False, 'error': 'Perfil no encontrado'}, 404
+    
+    # Verificar si ya existe en favoritos
+    favorito_existente = Favorito.query.filter_by(
+        perfil_id=perfil.id,
+        contenido_id=contenido_id
+    ).first()
+    
+    if favorito_existente:
+        return {'success': False, 'error': 'Ya está en favoritos'}, 400
+    
+    # Agregar a favoritos
+    nuevo_favorito = Favorito(
+        perfil_id=perfil.id,
+        contenido_id=contenido_id
+    )
+    db.session.add(nuevo_favorito)
+    db.session.commit()
+    
+    return {'success': True, 'message': 'Agregado a favoritos'}, 200
+
+
+@app.route('/eliminar_favorito/<int:contenido_id>', methods=['POST'])
+def eliminar_favorito(contenido_id):
+    if 'usuario_id' not in session:
+        return {'success': False, 'error': 'No autenticado'}, 401
+    
+    perfil_nombre = request.form.get('perfil')
+    if not perfil_nombre:
+        return {'success': False, 'error': 'Perfil no especificado'}, 400
+    
+    # Obtener el perfil
+    usuario = Usuario.query.get(session['usuario_id'])
+    perfil = Perfil.query.filter_by(nombre=perfil_nombre, usuario_id=usuario.id).first()
+    
+    if not perfil:
+        return {'success': False, 'error': 'Perfil no encontrado'}, 404
+    
+    # Buscar y eliminar el favorito
+    favorito = Favorito.query.filter_by(
+        perfil_id=perfil.id,
+        contenido_id=contenido_id
+    ).first()
+    
+    if not favorito:
+        return {'success': False, 'error': 'No está en favoritos'}, 404
+    
+    db.session.delete(favorito)
+    db.session.commit()
+    
+    return {'success': True, 'message': 'Eliminado de favoritos'}, 200
+
+
+@app.route('/favoritos')
+def favoritos():
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+    
+    perfil_nombre = request.args.get('perfil')
+    if not perfil_nombre:
+        flash('Debes seleccionar un perfil')
+        return redirect(url_for('perfiles'))
+    
+    # Obtener el perfil
+    usuario = Usuario.query.get(session['usuario_id'])
+    perfil = Perfil.query.filter_by(nombre=perfil_nombre, usuario_id=usuario.id).first()
+    
+    if not perfil:
+        flash('Perfil no encontrado')
+        return redirect(url_for('perfiles'))
+    
+    # Obtener favoritos del perfil
+    favoritos = Favorito.query.filter_by(perfil_id=perfil.id).all()
+    contenidos_favoritos = [f.contenido for f in favoritos]
+    
+    # Separar películas y series
+    peliculas = [c for c in contenidos_favoritos if c.tipo == 'movie']
+    series = [c for c in contenidos_favoritos if c.tipo == 'series']
+    
+    return render_template('favoritos.html',
+                         peliculas=peliculas,
+                         series=series,
                          perfil=perfil_nombre,
-                         es_infantil=perfil_actual.es_infantil if perfil_actual else False,
-                         busqueda=busqueda)
+                         es_infantil=perfil.es_infantil)
 
 
 # ---------------- LOGOUT ----------------

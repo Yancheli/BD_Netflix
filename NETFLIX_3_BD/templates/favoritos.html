@@ -2,33 +2,125 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Netflix Clone - Inicio</title>
+  <title>Mis Favoritos - Netflix Clone</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    .favorites-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .favorites-header h1 {
+      margin: 0;
+      font-size: 2.5em;
+    }
+    
+    .favorites-count {
+      background: rgba(229, 9, 20, 0.3);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      font-weight: 600;
+    }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.3s;
+      margin-bottom: 20px;
+    }
+    
+    .back-btn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateX(-3px);
+    }
+    
+    .empty-favorites {
+      text-align: center;
+      padding: 100px 20px;
+    }
+    
+    .empty-favorites-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+    
+    .empty-favorites h2 {
+      font-size: 2em;
+      margin-bottom: 15px;
+      color: var(--gris-texto);
+    }
+    
+    .empty-favorites p {
+      color: var(--gris-texto);
+      font-size: 1.1em;
+      margin-bottom: 30px;
+    }
+    
+    .btn-browse {
+      display: inline-block;
+      padding: 12px 24px;
+      background: var(--rojo-netflix);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    .btn-browse:hover {
+      background: #b00610;
+      transform: translateY(-2px);
+    }
+  </style>
 </head>
 <body>
   <header class="header" style="background-color: #000;">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
-    <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+    <div style="display: flex; align-items: center;">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
+      {% if perfil %}
+        <span class="profile-indicator {% if es_infantil %}infantil{% endif %}">
+          {% if es_infantil %}👶{% else %}👤{% endif %} {{ perfil }}
+        </span>
+      {% endif %}
+    </div>
+    <div class="header-actions">
+      <a href="{{ url_for('main', perfil=perfil) }}" class="btn-gestionar">
+        🏠 Inicio
+      </a>
+      <a href="{{ url_for('gestionar_perfiles') }}" class="btn-gestionar">
+        ⚙️ Gestionar Perfiles
+      </a>
+      <a href="{{ url_for('perfiles') }}" class="btn-perfiles">
+        Cambiar Perfil
+      </a>
+      <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+    </div>
   </header>
 
   <section class="content-section">
-    <!-- Selector de Categorías -->
-    <div class="categories-wrapper">
-      <a href="{{ url_for('main', perfil=perfil) }}" 
-         class="category-chip {% if not categoria_seleccionada %}active{% endif %}">
-        Todas
-      </a>
-      {% for categoria in categorias %}
-      <a href="{{ url_for('main', perfil=perfil, categoria=categoria.id) }}" 
-         class="category-chip {% if categoria_seleccionada == categoria.id %}active{% endif %}">
-        {{ categoria.name }}
-      </a>
-      {% endfor %}
+    <a href="{{ url_for('main', perfil=perfil) }}" class="back-btn">
+      ← Volver al catálogo
+    </a>
+
+    {% if peliculas or series %}
+    <div class="favorites-header">
+      <h1>❤️ Mis Favoritos</h1>
+      <span class="favorites-count">{{ peliculas|length + series|length }} contenido(s)</span>
     </div>
 
     {% if peliculas %}
-    <h2 class="section-title">Películas</h2>
+    <h2 class="section-title">Películas Favoritas</h2>
     <div class="movies">
       {% for pelicula in peliculas %}
       <div class="movie-card" tabindex="0"
@@ -44,6 +136,7 @@
         <div class="poster-wrap">
           <img src="{{ url_for('static', filename=pelicula.imagen_url) }}" alt="{{ pelicula.titulo }}">
           <a class="play-overlay" href="#">▶</a>
+          <span class="favorite-badge">❤️</span>
         </div>
         <h4>{{ pelicula.titulo }}</h4>
         <div class="badge">Película</div>
@@ -53,7 +146,7 @@
     {% endif %}
 
     {% if series %}
-    <h2 class="section-title">Series</h2>
+    <h2 class="section-title">Series Favoritas</h2>
     <div class="movies">
       {% for s in series %}
       <div class="movie-card" tabindex="0"
@@ -69,6 +162,7 @@
         <div class="poster-wrap">
           <img src="{{ url_for('static', filename=s.imagen_url) }}" alt="{{ s.titulo }}">
           <a class="play-overlay" href="#">▶</a>
+          <span class="favorite-badge">❤️</span>
         </div>
         <h4>{{ s.titulo }}</h4>
         <div class="badge badge-series">Serie</div>
@@ -77,12 +171,16 @@
     </div>
     {% endif %}
 
-    {% if not peliculas and not series %}
-    <div class="empty-state">
-      <p>No hay contenido disponible en esta categoría.</p>
+    {% else %}
+    <div class="empty-favorites">
+      <div class="empty-favorites-icon">💔</div>
+      <h2>No tienes favoritos aún</h2>
+      <p>Agrega películas y series a tus favoritos para encontrarlas fácilmente aquí</p>
+      <a href="{{ url_for('main', perfil=perfil) }}" class="btn-browse">
+        Explorar Catálogo
+      </a>
     </div>
     {% endif %}
-  </section>
   </section>
 
   <!-- Modal / preview window -->
@@ -105,14 +203,32 @@
         <p id="previewYear"><strong>Año:</strong> --</p>
         <p id="previewRating"><strong>Calificación:</strong> --</p>
         <div style="margin-top: 20px;">
-          <button class="btn-favorito" id="btnFavorito">
-            <span class="fav-icon">❤️</span>
-            <span class="fav-text">Agregar a Favoritos</span>
+          <button class="btn-favorito is-favorite" id="btnFavorito">
+            <span class="fav-icon">💔</span>
+            <span class="fav-text">Quitar de Favoritos</span>
           </button>
         </div>
       </div>
     </div>
   </div>
+
+  <style>
+    .favorite-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(229, 9, 20, 0.9);
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 14px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+  </style>
 
   <script>
     // Helper: convert youtube watch?v= to embed url
@@ -131,8 +247,12 @@
       const modal = document.getElementById('previewModal');
       const videoWrap = document.getElementById('videoWrap');
       const closeBtn = document.getElementById('closePreview');
+      const btnFavorito = document.getElementById('btnFavorito');
+      let currentContentId = null;
+      const perfilActual = '{{ perfil }}';
 
       function openPreview(card){
+        currentContentId = card.dataset.id;
         const title = card.dataset.title;
         const description = card.dataset.description || 'Sin descripción disponible';
         const genre = card.dataset.genre || '';
@@ -150,6 +270,10 @@
         document.getElementById('previewYear').innerHTML = '<strong>Año:</strong> ' + (year || '--');
         document.getElementById('previewRating').innerHTML = '<strong>Calificación:</strong> ' + rating;
 
+        // En favoritos siempre está como favorito
+        btnFavorito.querySelector('.fav-icon').textContent = '💔';
+        btnFavorito.querySelector('.fav-text').textContent = 'Quitar de Favoritos';
+
         // Limpiar contenido previo
         videoWrap.innerHTML = '';
 
@@ -164,12 +288,67 @@
           iframe.src = toEmbed(trailer);
           videoWrap.appendChild(iframe);
         } else {
-          // Si no hay trailer, mostrar mensaje
           videoWrap.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #bbb;">Trailer no disponible</div>';
         }
 
         modal.classList.add('open');
         modal.setAttribute('aria-hidden','false');
+      }
+
+      // Manejar click en botón de favorito (quitar)
+      btnFavorito.addEventListener('click', async function() {
+        if(!currentContentId || !perfilActual) return;
+        
+        btnFavorito.disabled = true;
+        
+        try {
+          const formData = new FormData();
+          formData.append('perfil', perfilActual);
+          
+          const response = await fetch(`/eliminar_favorito/${currentContentId}`, {
+            method: 'POST',
+            body: formData
+          });
+          
+          const data = await response.json();
+          
+          if(data.success) {
+            // Cerrar modal
+            closeBtn.click();
+            
+            // Recargar página para actualizar lista
+            setTimeout(() => window.location.reload(), 300);
+          } else {
+            mostrarNotificacion(data.error, true);
+          }
+        } catch(error) {
+          console.error('Error:', error);
+          mostrarNotificacion('Error al quitar de favoritos', true);
+        } finally {
+          btnFavorito.disabled = false;
+        }
+      });
+
+      function mostrarNotificacion(mensaje, esError = false) {
+        const notif = document.createElement('div');
+        notif.style.cssText = `
+          position: fixed;
+          top: 80px;
+          right: 20px;
+          background: ${esError ? 'rgba(229, 9, 20, 0.95)' : 'rgba(76, 175, 80, 0.95)'};
+          color: white;
+          padding: 12px 24px;
+          border-radius: 6px;
+          z-index: 10000;
+          animation: slideIn 0.3s ease;
+        `;
+        notif.textContent = mensaje;
+        document.body.appendChild(notif);
+        
+        setTimeout(() => {
+          notif.style.animation = 'slideOut 0.3s ease';
+          setTimeout(() => notif.remove(), 300);
+        }, 3000);
       }
 
       cards.forEach(c => {
@@ -181,6 +360,7 @@
         videoWrap.innerHTML = '';
         modal.classList.remove('open');
         modal.setAttribute('aria-hidden','true');
+        currentContentId = null;
       });
 
       document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeBtn.click(); } });
