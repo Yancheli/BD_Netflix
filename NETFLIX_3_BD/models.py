@@ -4,7 +4,7 @@ from datetime import datetime
 db = SQLAlchemy()
 
 class Usuario(db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     contraseña = db.Column(db.String(200), nullable=False)
@@ -19,7 +19,7 @@ class Perfil(db.Model):
     nombre = db.Column(db.String(50), nullable=False)
     avatar = db.Column(db.String(200), default='avatar1.png')
     es_infantil = db.Column(db.Boolean, default=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     
     
     favoritos = db.relationship('Favorito', backref='perfil', lazy=True, cascade='all, delete-orphan')

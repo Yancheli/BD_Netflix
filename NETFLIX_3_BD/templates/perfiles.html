@@ -18,7 +18,11 @@
       {% for perfil in perfiles %}
       <div class="profile">
         <a href="{{ url_for('main', perfil=perfil.nombre) }}">
-          <img src="{{ url_for('static', filename=perfil.imagen) }}" alt="Perfil {{ perfil.nombre }}">
+          {% if perfil.imagen %}
+            <img src="{{ url_for('static', filename=perfil.imagen) }}" alt="Perfil {{ perfil.nombre }}">
+          {% else %}
+            <img src="{{ url_for('static', filename='default.jpg') }}" alt="Imagen por defecto">
+          {% endif %}
           <div class="profile-name">{{ perfil.nombre }}</div>
         </a>
       </div>
