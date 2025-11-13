@@ -5,14 +5,81 @@
   <title>Netflix Clone - Inicio</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    .profile-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      margin-right: 15px;
+      font-size: 14px;
+    }
+    
+    .profile-indicator.infantil {
+      background: rgba(229, 9, 20, 0.3);
+      border: 1px solid rgba(229, 9, 20, 0.5);
+    }
+    
+    .flash-message {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(229, 9, 20, 0.95);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 6px;
+      z-index: 1000;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="header" style="background-color: #000;">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
-    <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+    <div style="display: flex; align-items: center;">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
+      {% if perfil %}
+        <span class="profile-indicator {% if es_infantil %}infantil{% endif %}">
+          {% if es_infantil %}👶{% else %}👤{% endif %} {{ perfil }}
+        </span>
+      {% endif %}
+    </div>
+    <div>
+      <a href="{{ url_for('perfiles') }}" class="login-btn" style="margin-right: 10px; background: rgba(255,255,255,0.1);">
+        Cambiar Perfil
+      </a>
+      <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+    </div>
   </header>
 
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="flash-message">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
   <section class="content-section">
+    {% if es_infantil %}
+    <div style="background: rgba(229, 9, 20, 0.15); border-left: 4px solid #e50914; padding: 12px 20px; margin-bottom: 30px; border-radius: 4px;">
+      <strong>👶 Modo Infantil Activo:</strong> Solo puedes ver contenido de las categorías Infantil y Romance
+    </div>
+    {% endif %}
+
     <!-- Selector de Categorías -->
     <div class="categories-wrapper">
       <a href="{{ url_for('main', perfil=perfil) }}" 
@@ -28,7 +95,7 @@
     </div>
 
     {% if peliculas %}
-    <h2 style="margin-top:30px;">Películas</h2>
+    <h2 class="section-title">Películas</h2>
     <div class="movies">
       {% for pelicula in peliculas %}
       <div class="movie-card" tabindex="0"
@@ -51,7 +118,7 @@
     {% endif %}
 
     {% if series %}
-    <h2 style="margin-top:40px;">Series</h2>
+    <h2 class="section-title">Series</h2>
     <div class="movies">
       {% for s in series %}
       <div class="movie-card" tabindex="0"
@@ -74,9 +141,14 @@
     {% endif %}
 
     {% if not peliculas and not series %}
-    <p style="text-align: center; color: #bbb; margin-top: 40px;">
-      No hay contenido disponible en esta categoría.
-    </p>
+    <div class="empty-state">
+      <p>No hay contenido disponible en esta categoría.</p>
+      {% if es_infantil %}
+        <p style="margin-top: 10px; font-size: 0.9em;">
+          Los perfiles infantiles solo pueden acceder a contenido de las categorías Infantil y Romance.
+        </p>
+      {% endif %}
+    </div>
     {% endif %}
   </section>
 
@@ -143,6 +215,15 @@
       });
 
       document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeBtn.click(); } });
+
+      // Auto-hide flash messages
+      const flashMsg = document.querySelector('.flash-message');
+      if(flashMsg){
+        setTimeout(() => {
+          flashMsg.style.animation = 'slideDown 0.3s ease reverse';
+          setTimeout(() => flashMsg.remove(), 300);
+        }, 3000);
+      }
     });
   </script>
 

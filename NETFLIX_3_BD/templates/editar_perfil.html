@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Perfil - Netflix Clone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    .edit-form-container {
+      background: rgba(0,0,0,0.75);
+      padding: 40px;
+      border-radius: 8px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--blanco);
+      font-weight: 500;
+    }
+    
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 16px;
+    }
+    
+    .form-group input[type="text"]:focus {
+      outline: none;
+      border-color: var(--rojo-netflix);
+      background: rgba(255,255,255,0.15);
+    }
+    
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .checkbox-container:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .checkbox-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .checkbox-container label {
+      margin: 0;
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .info-box {
+      background: rgba(74, 144, 226, 0.15);
+      border-left: 4px solid #4a90e2;
+      padding: 12px 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      color: var(--gris-texto);
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+    
+    .btn-cancel {
+      flex: 1;
+      padding: 12px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    
+    .btn-cancel:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .btn-save {
+      flex: 1;
+      padding: 12px;
+      background: var(--rojo-netflix);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn-save:hover {
+      background: #b00610;
+    }
+    
+    .profile-preview {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .profile-preview img {
+      width: 120px;
+      height: 120px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.2);
+    }
+    
+    .flash-message {
+      background: rgba(229, 9, 20, 0.2);
+      border-left: 4px solid #e50914;
+      padding: 12px 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      color: #fff;
+    }
+  </style>
+</head>
+<body class="home-bg">
+  <header class="header" style="background-color: #000;">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Netflix" class="logo-img">
+    <a href="{{ url_for('logout') }}" class="login-btn">Cerrar sesión</a>
+  </header>
+
+  <div class="hero">
+    <h1>Editar Perfil</h1>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flash-message">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="edit-form-container">
+      <div class="profile-preview">
+        {% if perfil.avatar %}
+          <img src="{{ url_for('static', filename=perfil.avatar) }}" alt="{{ perfil.nombre }}">
+        {% else %}
+          <img src="{{ url_for('static', filename='default.jpg') }}" alt="Avatar por defecto">
+        {% endif %}
+      </div>
+
+      <form method="POST">
+        <div class="form-group">
+          <label for="nombre">Nombre del perfil</label>
+          <input type="text" id="nombre" name="nombre" value="{{ perfil.nombre }}" required>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de perfil</label>
+          <div class="checkbox-container">
+            <input type="checkbox" id="es_infantil" name="es_infantil" {% if perfil.es_infantil %}checked{% endif %}>
+            <label for="es_infantil">
+              👶 Perfil Infantil
+            </label>
+          </div>
+          <div class="info-box">
+            ℹ️ Los perfiles infantiles solo tienen acceso a contenido de las categorías "Infantil" y "Romance"
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <a href="{{ url_for('gestionar_perfiles') }}" class="btn-cancel">Cancelar</a>
+          <button type="submit" class="btn-save">💾 Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">© 2025 Netflix Clone</footer>
+</body>
+</html>

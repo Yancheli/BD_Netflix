@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from config import Config
-from models import db, Usuario, Perfil, Contenido, Favorito
+from models import db, Usuario, Perfil, Contenido, Favorito, Category
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -174,6 +174,77 @@ def crear_perfil():
     return redirect(url_for('perfiles'))
 
 
+# ---------------- GESTIÓN DE PERFILES ----------------
+@app.route('/gestionar_perfiles')
+def gestionar_perfiles():
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+    
+    usuario = Usuario.query.get(session['usuario_id'])
+    plan = session.get('plan', 'basico')
+    plan_limits = {'basico': 1, 'estandar': 2, 'premium': 4}
+    max_perfiles = plan_limits.get(plan, 1)
+    
+    return render_template('gestionar_perfiles.html', 
+                         perfiles=usuario.perfiles,
+                         max_perfiles=max_perfiles)
+
+
+@app.route('/editar_perfil/<int:perfil_id>', methods=['GET', 'POST'])
+def editar_perfil(perfil_id):
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+    
+    perfil = Perfil.query.get_or_404(perfil_id)
+    
+    # Verificar que el perfil pertenece al usuario
+    if perfil.usuario_id != session['usuario_id']:
+        flash('No tienes permiso para editar este perfil')
+        return redirect(url_for('gestionar_perfiles'))
+    
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        es_infantil = bool(request.form.get('es_infantil'))
+        
+        if not nombre:
+            flash('El nombre del perfil es requerido')
+            return render_template('editar_perfil.html', perfil=perfil)
+        
+        perfil.nombre = nombre
+        perfil.es_infantil = es_infantil
+        db.session.commit()
+        
+        flash('Perfil actualizado exitosamente')
+        return redirect(url_for('gestionar_perfiles'))
+    
+    return render_template('editar_perfil.html', perfil=perfil)
+
+
+@app.route('/eliminar_perfil/<int:perfil_id>', methods=['POST'])
+def eliminar_perfil(perfil_id):
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+    
+    perfil = Perfil.query.get_or_404(perfil_id)
+    
+    # Verificar que el perfil pertenece al usuario
+    if perfil.usuario_id != session['usuario_id']:
+        flash('No tienes permiso para eliminar este perfil')
+        return redirect(url_for('gestionar_perfiles'))
+    
+    # Verificar que no sea el último perfil
+    usuario = Usuario.query.get(session['usuario_id'])
+    if len(usuario.perfiles) <= 1:
+        flash('No puedes eliminar el último perfil')
+        return redirect(url_for('gestionar_perfiles'))
+    
+    db.session.delete(perfil)
+    db.session.commit()
+    
+    flash('Perfil eliminado exitosamente')
+    return redirect(url_for('gestionar_perfiles'))
+
+
 # ---------------- PÁGINA PRINCIPAL (PELÍCULAS / SERIES) ----------------
 @app.route('/main')
 def main():
@@ -183,15 +254,42 @@ def main():
     perfil_nombre = request.args.get('perfil')
     categoria_id = request.args.get('categoria', type=int)
     
+    # Obtener el perfil actual
+    usuario = Usuario.query.get(session['usuario_id'])
+    perfil_actual = None
+    if perfil_nombre:
+        perfil_actual = Perfil.query.filter_by(
+            nombre=perfil_nombre, 
+            usuario_id=usuario.id
+        ).first()
+    
     # Obtener todas las categorías
-    from models import Category
     categorias = Category.query.all()
+    
+    # Si es perfil infantil, filtrar solo categorías permitidas
+    if perfil_actual and perfil_actual.es_infantil:
+        categorias_permitidas = ['Infantil', 'Romance']
+        categorias = [c for c in categorias if c.name in categorias_permitidas]
+        
+        # Si se seleccionó una categoría no permitida, redirigir
+        if categoria_id:
+            categoria_seleccionada = Category.query.get(categoria_id)
+            if categoria_seleccionada and categoria_seleccionada.name not in categorias_permitidas:
+                flash('Este contenido no está disponible en perfiles infantiles')
+                return redirect(url_for('main', perfil=perfil_nombre))
     
     # Filtrar contenido por categoría si se especifica
     if categoria_id:
         contenidos = Contenido.query.filter_by(category_id=categoria_id).all()
     else:
-        contenidos = Contenido.query.all()
+        # Si es perfil infantil, mostrar solo contenido permitido
+        if perfil_actual and perfil_actual.es_infantil:
+            categorias_permitidas_ids = [c.id for c in categorias]
+            contenidos = Contenido.query.filter(
+                Contenido.category_id.in_(categorias_permitidas_ids)
+            ).all()
+        else:
+            contenidos = Contenido.query.all()
     
     # Separar películas y series
     peliculas = [c for c in contenidos if c.tipo == 'movie']
@@ -202,7 +300,8 @@ def main():
                          series=series,
                          categorias=categorias,
                          categoria_seleccionada=categoria_id,
-                         perfil=perfil_nombre)
+                         perfil=perfil_nombre,
+                         es_infantil=perfil_actual.es_infantil if perfil_actual else False)
 
 
 # ---------------- LOGOUT ----------------
